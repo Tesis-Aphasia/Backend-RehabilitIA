@@ -1,0 +1,7 @@
+flowchart TD
+  START([Start]) --> step1_generate_verbs[step1_generate_verbs: genera 7 verbos]
+  step1_generate_verbs --> step2_classify_verbs[step2_classify_verbs: clasifica verbos]
+  step2_classify_verbs --> step3_select_pairs[step3_select_pairs: selecciona verbo y 3 SVO]
+  step3_select_pairs --> step4_expand_sentences[step4_expand_sentences: expansiones + 10 oraciones]
+  step4_expand_sentences --> step5_save_db[step5_save_db: lee/guarda en Firestore]
+  step5_save_db --> END([Finish])

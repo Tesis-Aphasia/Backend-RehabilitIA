@@ -1,0 +1,5 @@
+flowchart TD
+  START([Start]) --> generate_prompt[generate_prompt: crea prompt con texto no estructurado]
+  generate_prompt --> call_model[call_model: Azure OpenAI devuelve perfil estructurado JSON]
+  call_model --> persist_profile[persist_profile: (opcional) guarda perfil en Firestore]
+  persist_profile --> END([Finish])

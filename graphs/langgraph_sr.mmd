@@ -1,0 +1,6 @@
+flowchart TD
+  START([Start]) --> build_prompt[build_prompt: genera prompt SR con perfil del paciente]
+  build_prompt --> call_model[call_model: invoca Azure OpenAI con prompt SR]
+  call_model --> parse_and_validate[parse_and_validate: limpia y valida JSON de salida]
+  parse_and_validate --> persist[persist: guarda tarjetas en Firestore y asigna al paciente]
+  persist --> END([Finish])
