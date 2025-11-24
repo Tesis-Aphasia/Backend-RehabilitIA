@@ -1,0 +1,47 @@
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment variables (should be passed at runtime)
+.env
+env.env
+*.env
+
+# Documentation
+README.md
+*.md
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
