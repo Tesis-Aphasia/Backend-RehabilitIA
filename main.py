@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from firebase_admin import firestore
 
 # Importaciones de tus funciones auxiliares
+from logic.image_generator_service import generate_images_for_exercise, _extract_words_with_gpt, _normalize_key
 from logic.main_langraph_vnest import main_langraph_vnest
 from logic.main_langraph_sr import main_langraph_sr
 from logic.main_personalization import main_personalization
@@ -40,6 +41,10 @@ class ProfileStructurePayload(BaseModel):
     user_id: str
     raw_text: str
 
+class ImageGeneratePayload(BaseModel):
+    exercise_id: str
+    terapia: str  
+
 # ========================
 #  ENDPOINTS
 # ========================
@@ -74,3 +79,101 @@ def structure_profile(payload: ProfileStructurePayload):
     print("Respuesta generada:", response)
     return response
 
+@app.post("/images/generate")
+def generate_images(payload: ImageGeneratePayload):
+    result = generate_images_for_exercise(payload.exercise_id, payload.terapia)
+    return result
+
+@app.delete("/exercises/{exercise_id}")
+def delete_exercise(exercise_id: str, terapia: str):
+    """Borra el ejercicio de 'ejercicios' y de ejercicios_VNEST o ejercicios_SR."""
+    try:
+        db.collection("ejercicios").document(exercise_id).delete()
+        coleccion = "ejercicios_VNEST" if terapia == "VNEST" else "ejercicios_SR"
+        db.collection(coleccion).document(exercise_id).delete()
+        return {"ok": True, "deleted": exercise_id}
+    except Exception as e:
+        return {"error": str(e)}
+    
+
+# ── Preview: ahora usa GPT-4.1 en lugar del NLP manual ──────────
+@app.post("/images/preview")
+def preview_images(payload: ImageGeneratePayload):
+    """
+    Llama a GPT-4.1 para saber qué palabras necesitan imagen,
+    luego verifica cuáles ya existen en Firebase.
+    NO genera imágenes — solo muestra el plan.
+    """
+    coleccion = "ejercicios_VNEST" if payload.terapia == "VNEST" else "ejercicios_SR"
+    ref = db.collection(coleccion).document(payload.exercise_id)
+    doc = ref.get()
+ 
+    if not doc.exists:
+        return {"error": f"Ejercicio {payload.exercise_id} no encontrado"}
+ 
+    ejercicio = doc.to_dict()
+ 
+    # GPT-4.1 decide qué palabras necesitan imagen
+    try:
+        words = _extract_words_with_gpt(ejercicio, payload.terapia)
+    except Exception as e:
+        return {"error": f"Error al extraer palabras con GPT: {str(e)}"}
+ 
+    # Para cada palabra, verifica si ya existe imagen en Firebase
+    resultado = []
+    for item in words:
+        key = _normalize_key(item["word"])
+        img_doc = db.collection("imagenes").document(key).get()
+        ya_existe = img_doc.exists
+        url_existente = img_doc.to_dict().get("url") if ya_existe else None
+ 
+        resultado.append({
+            "word": item["word"],
+            "tipo": item["tipo"],
+            "slot": item["slot"],
+            "key": key,
+            "ya_existe_en_firebase": ya_existe,
+            "url_existente": url_existente,
+            "accion": "reutilizar" if ya_existe else "generar",
+        })
+ 
+    resumen = {
+        "total": len(resultado),
+        "a_generar": sum(1 for r in resultado if r["accion"] == "generar"),
+        "a_reutilizar": sum(1 for r in resultado if r["accion"] == "reutilizar"),
+    }
+ 
+    return {
+        "exercise_id": payload.exercise_id,
+        "terapia": payload.terapia,
+        "resumen": resumen,
+        "palabras": resultado,
+    }
+
+@app.delete("/images/{image_key}")
+def delete_image(image_key: str, exercise_id: str, terapia: str):
+    try:
+        db = firestore.client()
+
+        # 1. Borrar de Storage
+        bucket = fb_storage.bucket("apphasia-7a930.firebasestorage.app")
+        blob = bucket.blob(f"imagenes/{image_key}.png")
+        if blob.exists():
+            blob.delete()
+
+        # 2. Borrar doc de colección imagenes
+        db.collection("imagenes").document(image_key).delete()
+
+        # 3. Limpiar referencia en el ejercicio
+        coleccion = "ejercicios_VNEST" if terapia == "VNEST" else "ejercicios_SR"
+        ref = db.collection(coleccion).document(exercise_id)
+        doc = ref.get()
+        if doc.exists:
+            imagenes = doc.to_dict().get("imagenes", {})
+            nuevas = {k: v for k, v in imagenes.items() if v.get("key") != image_key}
+            ref.update({"imagenes": nuevas})
+
+        return {"ok": True, "deleted": image_key}
+
+    except Exception as e:
+        return {"error": str(e)}

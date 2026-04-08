@@ -110,3 +110,37 @@ def generate_prompt(json_prev: dict) -> str:
         "  \"oraciones\": [ { \"oracion\": \"string\", \"correcta\": true, \"explicacion\": \"string\" } ]"
         "}"
     )
+
+
+
+def generate_simplification_prompt(json_prev: dict) -> str:
+    return (
+        "PROMPT 6:\n"
+        "Toma el siguiente JSON y REVISA todo el contenido del ejercicio. "
+        "El objetivo es asegurar que el lenguaje utilizado sea claro, general "
+        "y fácil de imaginar visualmente.\n\n"
+
+        f"JSON de entrada:\n{json.dumps(json_prev, ensure_ascii=False)}\n\n"
+
+        "Reglas de verificación:\n"
+        "- Revisa todas las palabras y oraciones del ejercicio.\n"
+        "- Si encuentras términos demasiado específicos o difíciles de imaginar visualmente, reemplázalos por versiones más generales sin cambiar el significado del ejercicio.\n"
+        "- Mantén siempre el mismo verbo principal.\n"
+        "- Mantén la coherencia semántica del ejercicio.\n"
+        "- No agregues nueva información.\n"
+        "- No elimines información existente.\n"
+        "- Mantén exactamente la misma cantidad de elementos en todas las listas.\n"
+        "- Mantén exactamente la misma estructura JSON.\n"
+        "- Solo modifica palabras cuando sea necesario.\n\n"
+
+        "El resultado debe describir acciones y elementos que puedan imaginarse en una escena.\n\n"
+
+        "Responde SOLO con JSON válido, sin texto adicional.\n\n"
+
+        "Formato requerido:\n"
+        "{"
+        "  \"verbo\": \"string\","
+        "  \"pares\": [ { \"sujeto\": \"string\", \"objeto\": \"string\", \"expansiones\": { ... } } ],"
+        "  \"oraciones\": [ { \"oracion\": \"string\", \"correcta\": true, \"explicacion\": \"string\" } ]"
+        "}"
+    )

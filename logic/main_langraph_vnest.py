@@ -17,6 +17,7 @@ from prompts.prompts_vnest import (
     pair_subject_object,
     sentence_expansion,
     generate_prompt,
+    generate_simplification_prompt,
 )
 
 
@@ -69,6 +70,7 @@ class ExerciseState(TypedDict, total=False):
     pares: List[Dict]
     oraciones: List[Dict]
     doc_id: Optional[str]
+    verificacion: Dict 
 
 
 # ============================================================
@@ -174,10 +176,11 @@ def step4_expand_sentences(state: ExerciseState) -> ExerciseState:
     }
 
 
-def step5_save_db(state: ExerciseState) -> ExerciseState:
+# s step6_save_db
+def step6_save_db(state: ExerciseState) -> ExerciseState:
     verbo = (state.get("verbo") or state.get("verbo_seleccionado") or "").strip()
     if not verbo:
-        raise ValueError("State sin 'verbo' en step5.")
+        raise ValueError("State sin 'verbo' en step6.")
 
     doc_id = f"E{uuid.uuid4().hex[:6].upper()}"
     nivel = state.get("nivel")
@@ -219,6 +222,56 @@ def step5_save_db(state: ExerciseState) -> ExerciseState:
     }
 
 
+# step5_verify_and_simplify
+def step5_verify_and_simplify(state: ExerciseState) -> ExerciseState:
+    verbo     = state.get("verbo", "")
+    pares     = state.get("pares", [])
+    oraciones = state.get("oraciones", [])
+
+    print("\n--- STEP 5: Simplificando lenguaje ---")
+
+    try:
+        json_prev = {
+            "verbo":     verbo,
+            "pares":     pares,
+            "oraciones": oraciones,
+        }
+
+        prompt     = generate_simplification_prompt(json_prev)
+        simplified = run_prompt(prompt)
+
+        new_pares     = simplified.get("pares", pares)
+        new_oraciones = simplified.get("oraciones", oraciones)
+
+        for i, (old_p, new_p) in enumerate(zip(pares, new_pares)):
+            if old_p.get("sujeto") != new_p.get("sujeto"):
+                print(f"  Par {i+1} sujeto: '{old_p.get('sujeto')}' → '{new_p.get('sujeto')}'")
+            if old_p.get("objeto") != new_p.get("objeto"):
+                print(f"  Par {i+1} objeto: '{old_p.get('objeto')}' → '{new_p.get('objeto')}'")
+            old_exp = old_p.get("expansiones", {})
+            new_exp = new_p.get("expansiones", {})
+            for pregunta in ["donde", "cuando", "por_que"]:
+                old_ops = old_exp.get(pregunta, {}).get("opciones", [])
+                new_ops = new_exp.get(pregunta, {}).get("opciones", [])
+                for j, (oo, no) in enumerate(zip(old_ops, new_ops)):
+                    if oo != no:
+                        print(f"  Par {i+1} {pregunta} opcion {j+1}: '{oo}' → '{no}'")
+
+        for i, (old_o, new_o) in enumerate(zip(oraciones, new_oraciones)):
+            if old_o.get("oracion") != new_o.get("oracion"):
+                print(f"  Oracion {i+1}: '{old_o.get('oracion')}' → '{new_o.get('oracion')}'")
+
+    except Exception as e:
+        print(f" Error en step5: {e}")
+        new_pares     = pares
+        new_oraciones = oraciones
+
+    state["pares"]     = new_pares
+    state["oraciones"] = new_oraciones
+
+    return state
+
+
 # ============================================================
 # Graph
 # ============================================================
@@ -230,12 +283,14 @@ def build_graph():
     graph.add_node("step2_classify_verbs", step2_classify_verbs)
     graph.add_node("step3_select_pairs", step3_select_pairs)
     graph.add_node("step4_expand_sentences", step4_expand_sentences)
-    graph.add_node("step5_save_db", step5_save_db)
+    graph.add_node("step5_save_db", step5_verify_and_simplify)
+    graph.add_node("step6_verify_and_simplify", step6_save_db)
 
     graph.add_edge("step1_generate_verbs", "step2_classify_verbs")
     graph.add_edge("step2_classify_verbs", "step3_select_pairs")
     graph.add_edge("step3_select_pairs", "step4_expand_sentences")
     graph.add_edge("step4_expand_sentences", "step5_save_db")
+    graph.add_edge("step5_save_db",             "step6_verify_and_simplify")  
 
     graph.set_entry_point("step1_generate_verbs")
     graph.set_finish_point("step5_save_db")
