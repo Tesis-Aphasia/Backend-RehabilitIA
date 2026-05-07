@@ -88,8 +88,7 @@ def generate(word, tipo):
 
     prompt = get_image_prompt(word, tipo)
 
-    print("\nPROMPT:")
-    print(prompt)
+    
 
     b64 = _call_api(prompt)
 
@@ -104,5 +103,5 @@ def generate(word, tipo):
 # ============================================================
 if __name__ == "__main__":
 
-    generate("persona de Bogotá", "sujeto")
-    
+    generate("vacaciones", "objeto")
+

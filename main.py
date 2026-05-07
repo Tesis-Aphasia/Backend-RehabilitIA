@@ -9,6 +9,7 @@ from logic.main_langraph_vnest import main_langraph_vnest
 from logic.main_langraph_sr import main_langraph_sr
 from logic.main_personalization import main_personalization
 from logic.main_profile_structure import main_profile_structure
+from logic.image_generator_service import _get_or_generate, _normalize_key
 
 app = FastAPI()
 db = firestore.client()
@@ -84,19 +85,9 @@ def generate_images(payload: ImageGeneratePayload):
     result = generate_images_for_exercise(payload.exercise_id, payload.terapia)
     return result
 
-@app.delete("/exercises/{exercise_id}")
-def delete_exercise(exercise_id: str, terapia: str):
-    """Borra el ejercicio de 'ejercicios' y de ejercicios_VNEST o ejercicios_SR."""
-    try:
-        db.collection("ejercicios").document(exercise_id).delete()
-        coleccion = "ejercicios_VNEST" if terapia == "VNEST" else "ejercicios_SR"
-        db.collection(coleccion).document(exercise_id).delete()
-        return {"ok": True, "deleted": exercise_id}
-    except Exception as e:
-        return {"error": str(e)}
     
 
-# ── Preview: ahora usa GPT-4.1 en lugar del NLP manual ──────────
+# ── Preview: ahora usa GPT-4.1 ──────────
 @app.post("/images/preview")
 def preview_images(payload: ImageGeneratePayload):
     """
@@ -150,26 +141,28 @@ def preview_images(payload: ImageGeneratePayload):
         "palabras": resultado,
     }
 
+import firebase_admin.storage as fb_storage
+
 @app.delete("/images/{image_key}")
 def delete_image(image_key: str, exercise_id: str, terapia: str):
     try:
         db = firestore.client()
-
+        
         # 1. Borrar de Storage
         bucket = fb_storage.bucket("apphasia-7a930.firebasestorage.app")
         blob = bucket.blob(f"imagenes/{image_key}.png")
         if blob.exists():
             blob.delete()
 
-        # 2. Borrar doc de colección imagenes
+        # 2. Borrar de colección imagenes
         db.collection("imagenes").document(image_key).delete()
 
-        # 3. Limpiar referencia en el ejercicio
+        # 3. Limpiar el slot en el documento del ejercicio
         coleccion = "ejercicios_VNEST" if terapia == "VNEST" else "ejercicios_SR"
         ref = db.collection(coleccion).document(exercise_id)
-        doc = ref.get()
-        if doc.exists:
-            imagenes = doc.to_dict().get("imagenes", {})
+        doc_snap = ref.get()
+        if doc_snap.exists:
+            imagenes = doc_snap.to_dict().get("imagenes", {})
             nuevas = {k: v for k, v in imagenes.items() if v.get("key") != image_key}
             ref.update({"imagenes": nuevas})
 
@@ -177,3 +170,66 @@ def delete_image(image_key: str, exercise_id: str, terapia: str):
 
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.delete("/exercises/{exercise_id}")
+def delete_exercise(exercise_id: str, terapia: str):
+    try:
+        coleccion = "ejercicios_VNEST" if terapia == "VNEST" else "ejercicios_SR"
+        ref = db.collection(coleccion).document(exercise_id)
+        doc_snap = ref.get()
+
+        if doc_snap.exists:
+            imagenes = doc_snap.to_dict().get("imagenes", {})
+            bucket = fb_storage.bucket("apphasia-7a930.firebasestorage.app")
+
+            for slot, img in imagenes.items():
+                key = img.get("key")
+                if key:
+                    # Borrar de Storage
+                    blob = bucket.blob(f"imagenes/{key}.png")
+                    if blob.exists():
+                        blob.delete()
+                    # Borrar de colección imagenes
+                    db.collection("imagenes").document(key).delete()
+
+        # Borrar documentos del ejercicio
+        ref.delete()
+        db.collection("ejercicios").document(exercise_id).delete()
+
+        return {"ok": True, "deleted": exercise_id}
+
+    except Exception as e:
+        return {"error": str(e)}
+    
+class SingleImagePayload(BaseModel):
+    exercise_id: str
+    terapia: str
+    slot: str
+    word: str
+    tipo: str
+
+@app.post("/images/generate-single")
+def generate_single_image(payload: SingleImagePayload):
+    try:
+        
+
+        url = _get_or_generate(payload.word, payload.tipo)
+        if not url:
+            return {"ok": False, "error": f"No se pudo generar la imagen para '{payload.word}'"}
+
+        imagen = {
+            "word": payload.word,
+            "url": url,
+            "key": _normalize_key(payload.word),
+        }
+
+        # Guardar el slot en el documento del ejercicio
+        coleccion = "ejercicios_VNEST" if payload.terapia == "VNEST" else "ejercicios_SR"
+        ref = db.collection(coleccion).document(payload.exercise_id)
+        ref.update({f"imagenes.{payload.slot}": imagen})
+
+        return {"ok": True, "imagen": imagen}
+
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

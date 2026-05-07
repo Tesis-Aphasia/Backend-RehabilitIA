@@ -59,10 +59,20 @@ Respuesta correcta: {ejercicio.get('rta_correcta', '')}
 """
     instrucciones = """
 Para ejercicios SR:
-- Extrae el verbo principal de la pregunta (slot: "pregunta_verbo")
-- Extrae la respuesta correcta si es ilustrable (slot: "pregunta_<pregunta_normalizada>_rta")
+Para ejercicios SR:
+
+1. Pregunta:
+- Extrae el verbo principal (slot: "pregunta_verbo")
+- Extrae sustantivos importantes SOLO si aparecen literalmente en la pregunta
+
+2. Respuesta:
+- Extrae la respuesta correcta si es ilustrable y la o las palabras estan explicitamente en la respuesta(slot: "pregunta_<pregunta_normalizada>_rta")
+
+REGLA CRÍTICA:
+- NO inferir conceptos desde la respuesta
+- NO convertir la respuesta en algo de la pregunta
+- NO mover palabras entre pregunta y respuesta
 - NO extraigas: nombres propios de personas, correos, teléfonos, contraseñas, fechas numéricas, palabras abstractas no ilustrables
-- Si la respuesta es un nombre propio de persona (ej: "María", "Juan"), usa en cambio el concepto de la pregunta que mejor lo represente visualmente
 """
     return f"Analiza este ejercicio y devuelve las palabras que necesitan imagen:\n{ejercicio_texto}\n{instrucciones}"
 
@@ -91,6 +101,9 @@ Para ejercicios VNEST:
 - De "cuando" y "por_que":
   - Extrae sustantivos ilustrables de la opción correcta
   - Mantén frases completas si representan mejor el concepto
+   - NO te limites a la opción correcta.
+
+  - Debes seleccionar palabras de al menos 2 opciones diferentes (incluyendo la correcta y al menos una incorrecta).
 
 - NO extraigas expresiones temporales abstractas como "al inicio de", "a la hora de"
 - NO generes palabras nuevas
