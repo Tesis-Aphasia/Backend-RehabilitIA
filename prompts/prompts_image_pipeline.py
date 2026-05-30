@@ -101,7 +101,12 @@ Para ejercicios VNEST:
 - De "cuando" y "por_que":
   - Extrae sustantivos ilustrables de la opción correcta
   - Mantén frases completas si representan mejor el concepto
-   - NO te limites a la opción correcta.
+  - NO te limites a la opción correcta.
+  - Extrae la opción correcta con slot exacto: "pares_<i>_cuando_correcta" o "pares_<i>_por_que_correcta"
+  - Extrae al menos una opción incorrecta ilustrable con slot exacto: "pares_<i>_cuando_incorrecta_1", "pares_<i>_cuando_incorrecta_2", "pares_<i>_por_que_incorrecta_1", "pares_<i>_por_que_incorrecta_2"
+  - NUNCA uses el nombre de la palabra como parte del slot
+  - El slot SIEMPRE debe terminar en _correcta o _incorrecta_<número>
+
 
   - Debes seleccionar palabras de al menos 2 opciones diferentes (incluyendo la correcta y al menos una incorrecta).
 

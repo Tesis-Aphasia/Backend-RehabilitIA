@@ -234,3 +234,48 @@ def generate_single_image(payload: SingleImagePayload):
 
     except Exception as e:
         return {"ok": False, "error": str(e)}
+    
+
+@app.post("/images/regenerate")
+def regenerate_images(payload: ImageGeneratePayload):
+    """Fuerza regeneración del mapa de imágenes ignorando caché de slots."""
+    db = firestore.client()
+    coleccion = "ejercicios_VNEST" if payload.terapia == "VNEST" else "ejercicios_SR"
+    ref = db.collection(coleccion).document(payload.exercise_id)
+    doc = ref.get()
+
+    if not doc.exists:
+        return {"error": f"Ejercicio {payload.exercise_id} no encontrado"}
+
+    ejercicio = doc.to_dict()
+
+    try:
+        words = _extract_words_with_gpt(ejercicio, payload.terapia)
+    except Exception as e:
+        return {"error": f"Error al extraer palabras con GPT: {str(e)}"}
+
+    if not words:
+        return {"error": "GPT no encontró palabras ilustrables"}
+
+    # Reutiliza imágenes existentes en Firebase pero reconstruye el mapa con slots correctos
+    imagenes_map = {}
+    for item in words:
+        url = _get_or_generate(item["word"], item["tipo"])
+        if url:
+            imagenes_map[item["slot"]] = {
+                "word": item["word"],
+                "url": url,
+                "key": _normalize_key(item["word"]),
+            }
+
+    # Sobreescribe el mapa completo
+    ref.update({"imagenes": imagenes_map})
+
+    return {
+        "ok": True,
+        "exercise_id": payload.exercise_id,
+        "terapia": payload.terapia,
+        "palabras_extraidas": len(words),
+        "con_imagen": len(imagenes_map),
+        "imagenes": imagenes_map,
+    }

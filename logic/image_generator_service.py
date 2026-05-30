@@ -59,7 +59,7 @@ def _extract_words_with_gpt(ejercicio: dict, terapia: str) -> list[dict]:
             {"role": "user",   "content": prompt_usuario},
         ],
         temperature=0,
-        max_tokens=800,
+        max_tokens=2000,
         response_format={"type": "json_object"},
     )
 
