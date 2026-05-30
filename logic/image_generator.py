@@ -75,18 +75,6 @@ def generate(word, tipo) -> str:
 # ============================================================
 # Generar imagen
 # ============================================================
-def generate(word, tipo):
-
-    print("\nGenerando:", word, "| tipo:", tipo)
-
-    prompt = get_image_prompt(word, tipo)
-
-    
-
-    b64 = _call_api(prompt)
-
-    filename = f"{_normalize(word)}.png"
-    path = os.path.join(OUTPUT_DIR, filename)
 
    
 
