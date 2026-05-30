@@ -63,7 +63,7 @@ Para ejercicios SR:
 
 1. Pregunta:
 - Extrae el verbo principal (slot: "pregunta_verbo")
-- Extrae sustantivos importantes SOLO si aparecen literalmente en la pregunta
+- Extrae sustantivos importantes SOLO si aparecen literalmente en la pregunta (Por ejepmplo relaciones familiares)
 
 2. Respuesta:
 - Extrae la respuesta correcta si es ilustrable y la o las palabras estan explicitamente en la respuesta(slot: "pregunta_<pregunta_normalizada>_rta")

@@ -87,10 +87,6 @@ def _extract_words_with_gpt(ejercicio: dict, terapia: str) -> list[dict]:
 # Genera o reutiliza imagen desde Firebase
 # ============================================================
 def _get_or_generate(word: str, tipo: str) -> str | None:
-    """
-    Busca si ya existe imagen en la colección 'imagenes'.
-    Si no existe, la genera con gpt-image-1.5, la sube a Firebase Storage y guarda la URL.
-    """
     db = firestore.client()
     key = _normalize_key(word)
     ref = db.collection("imagenes").document(key)
@@ -99,22 +95,23 @@ def _get_or_generate(word: str, tipo: str) -> str | None:
     if doc.exists:
         return doc.to_dict().get("url")
 
-    # Genera la imagen con el modelo de imágenes existente
-    generate(word, tipo)
-
-    filename = f"{key}.png"
-    local_path = os.path.join(OUTPUT_DIR, filename)
-    if not os.path.exists(local_path):
+    # Genera la imagen y obtiene b64 directamente
+    b64 = generate(word, tipo)
+    if not b64:
         return None
 
-    # Sube a Firebase Storage
+    # Sube a Firebase Storage desde memoria (sin guardar en disco)
+    import base64 as b64_module
     bucket = storage.bucket("apphasia-7a930.firebasestorage.app")
-    blob = bucket.blob(f"imagenes/{filename}")
-    blob.upload_from_filename(local_path, content_type="image/png")
+    blob = bucket.blob(f"imagenes/{key}.png")
+    blob.upload_from_string(
+        b64_module.b64decode(b64),
+        content_type="image/png"
+    )
     blob.make_public()
     url = blob.public_url
 
-    # Guarda en colección 'imagenes' para reutilizar en futuros ejercicios
+    # Guarda en colección 'imagenes'
     ref.set({
         "word": word,
         "key": key,

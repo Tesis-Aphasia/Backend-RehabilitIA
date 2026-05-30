@@ -65,7 +65,10 @@ def _call_api(prompt: str) -> str:
 
     return resp.json()["data"][0]["b64_json"]
 
-
+def generate(word, tipo) -> str:
+    print("\nGenerando:", word, "| tipo:", tipo)
+    prompt = get_image_prompt(word, tipo)
+    return _call_api(prompt)
 
 
 
