@@ -4,9 +4,9 @@ import base64
 import requests
 
 from dotenv import load_dotenv
-from deep_translator import GoogleTranslator
 
-from prompts.prompts_image_pipeline import get_image_prompt  # pip install deep-translator
+
+from prompts.prompts_image_pipeline import get_image_prompt 
 
 load_dotenv("env.env")
 
