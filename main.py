@@ -143,8 +143,9 @@ def preview_images(payload: ImageGeneratePayload):
 
 import firebase_admin.storage as fb_storage
 
-@app.delete("/images/{image_key}")
+@app.post("/images/{image_key}/delete")
 def delete_image(image_key: str, exercise_id: str, terapia: str):
+
     try:
         db = firestore.client()
         
@@ -172,7 +173,7 @@ def delete_image(image_key: str, exercise_id: str, terapia: str):
         return {"error": str(e)}
 
 
-@app.delete("/exercises/{exercise_id}")
+@app.post("/exercises/{exercise_id}/delete")
 def delete_exercise(exercise_id: str, terapia: str):
     try:
         coleccion = "ejercicios_VNEST" if terapia == "VNEST" else "ejercicios_SR"
