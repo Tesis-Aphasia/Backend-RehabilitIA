@@ -66,17 +66,7 @@ def _call_api(prompt: str) -> str:
     return resp.json()["data"][0]["b64_json"]
 
 
-# ============================================================
-# Guardar imagen
-# ============================================================
-def _save(b64: str, filepath: str):
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    with open(filepath, "wb") as f:
-        f.write(base64.b64decode(b64))
-
-    print("Guardada:", filepath)
 
 
 # ============================================================
@@ -95,7 +85,7 @@ def generate(word, tipo):
     filename = f"{_normalize(word)}.png"
     path = os.path.join(OUTPUT_DIR, filename)
 
-    _save(b64, path)
+   
 
 
 # ============================================================
@@ -103,5 +93,5 @@ def generate(word, tipo):
 # ============================================================
 if __name__ == "__main__":
 
-    generate("vacaciones", "objeto")
+    generate("historia", "objeto")
 

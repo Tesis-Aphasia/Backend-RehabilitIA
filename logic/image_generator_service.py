@@ -64,6 +64,9 @@ def _extract_words_with_gpt(ejercicio: dict, terapia: str) -> list[dict]:
     )
 
     content = resp.choices[0].message.content
+    print("=== RAW GPT RESPONSE ===")
+    print(content)
+    print("========================")
     data = json.loads(content)
 
     raw_words = data.get("palabras", data) if isinstance(data, dict) else data

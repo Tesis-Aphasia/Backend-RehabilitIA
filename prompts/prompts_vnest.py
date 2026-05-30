@@ -131,7 +131,7 @@ def generate_simplification_prompt(json_prev: dict) -> str:
         "- No elimines información existente.\n"
         "- Mantén exactamente la misma cantidad de elementos en todas las listas.\n"
         "- Mantén exactamente la misma estructura JSON.\n"
-        "- Solo modifica palabras cuando sea necesario.\n\n"
+        "- Solo modifica palabras cuando sea necesario, si se trata de ciudades, nombres de monumentos o lugares reconocibles con imágenes no las modifiques.\n\n"
 
         "El resultado debe describir acciones y elementos que puedan imaginarse en una escena.\n\n"
 
