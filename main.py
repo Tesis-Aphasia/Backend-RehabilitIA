@@ -85,6 +85,38 @@ def generate_images(payload: ImageGeneratePayload):
     result = generate_images_for_exercise(payload.exercise_id, payload.terapia)
     return result
 
+import threading
+import uuid
+
+# Almacén en memoria de jobs
+jobs = {}
+
+@app.post("/images/generate-async")
+def generate_images_async(payload: ImageGeneratePayload):
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {"status": "processing", "imagenes": None, "error": None}
+    
+    def run():
+        try:
+            result = generate_images_for_exercise(payload.exercise_id, payload.terapia)
+            jobs[job_id]["imagenes"] = result.get("imagenes")
+            jobs[job_id]["status"] = "done"
+            jobs[job_id]["result"] = result
+        except Exception as e:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = str(e)
+    
+    thread = threading.Thread(target=run)
+    thread.start()
+    
+    return {"job_id": job_id, "status": "processing"}
+
+@app.get("/images/status/{job_id}")
+def get_job_status(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        return {"status": "not_found"}
+    return job
     
 
 # ── Preview: ahora usa GPT-4.1 ──────────
