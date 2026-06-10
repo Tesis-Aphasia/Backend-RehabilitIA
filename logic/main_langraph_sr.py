@@ -95,7 +95,8 @@ def save_sr_cards(user_id: str, cards: List[Dict]):
         col_general.document(doc_id).set({
             "id": doc_id,
             "terapia": "SR",
-            "revisado": False,
+            # Personalizado deriva de un ejercicio base ya verificado -> aprobado de una vez
+            "revisado": True,
             "tipo": "privado",
             "creado_por": "IA",
             "personalizado": True,

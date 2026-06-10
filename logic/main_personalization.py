@@ -86,7 +86,8 @@ def save_personalized_exercise(exercise_data: Dict[str, Any]) -> str:
     general_data = {
         "id": doc_id,
         "terapia": exercise_data.get("terapia"),
-        "revisado": False,
+        # Personalizado deriva de un ejercicio base ya verificado -> aprobado de una vez
+        "revisado": True,
         "tipo": "privado",
         "creado_por": exercise_data.get("creado_por"),
         "personalizado": True,
