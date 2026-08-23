@@ -114,6 +114,7 @@ def save_personalized_exercise(exercise_data: Dict[str, Any]) -> str:
         db.collection("ejercicios_VNEST").document(doc_id).set(vnest_data)
 
     elif terapia == "SR":
+        exercise_data["id_ejercicio_general"] = doc_id
         db.collection("ejercicios_SR").document(doc_id).set(exercise_data)
 
     else:
