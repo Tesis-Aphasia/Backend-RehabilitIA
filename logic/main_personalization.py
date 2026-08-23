@@ -158,6 +158,13 @@ def run_prompt(prompt: str) -> Dict[str, Any]:
 def main_personalization(user_id: str, exercise_id: str, patient_profile: Dict[str, Any]):
     """Genera un ejercicio personalizado basado en un ejercicio existente."""
     base = get_exercise_base(exercise_id)
+
+    if not base.get("aprobado"):
+        raise ValueError(
+            f"El ejercicio base '{exercise_id}' aun no ha sido aprobado por un terapeuta; "
+            "no se puede personalizar."
+        )
+
     prompt = generate_personalization_prompt(base, patient_profile, user_id)
     result = run_prompt(prompt)
 
