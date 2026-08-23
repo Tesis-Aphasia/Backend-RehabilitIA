@@ -82,6 +82,7 @@ def save_personalized_exercise(exercise_data: Dict[str, Any]) -> str:
     """Guarda un ejercicio personalizado en las colecciones correspondientes."""
     doc_id = f"E{uuid.uuid4().hex[:6].upper()}"
     exercise_data["id"] = doc_id
+    aprobado_base = exercise_data.pop("aprobado_base", False)
 
     general_data = {
         "id": doc_id,
@@ -110,6 +111,8 @@ def save_personalized_exercise(exercise_data: Dict[str, Any]) -> str:
             "oraciones": exercise_data.get("oraciones", []),
             "pares": exercise_data.get("pares", []),
             "verbo": exercise_data.get("verbo", ""),
+            # Si el ejercicio base ya estaba aprobado, el personalizado hereda la aprobacion
+            "aprobado": aprobado_base,
         }
         db.collection("ejercicios_VNEST").document(doc_id).set(vnest_data)
 
@@ -163,6 +166,7 @@ def main_personalization(user_id: str, exercise_id: str, patient_profile: Dict[s
     result["creado_por"] = "IA"
     result["personalizado"] = True
     result["contexto"] = base.get("contexto") or base.get("context_hint")
+    result["aprobado_base"] = base.get("aprobado", False)
 
     new_id = save_personalized_exercise(result)
 
